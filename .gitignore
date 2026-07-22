@@ -19,6 +19,7 @@ backend/.env
 frontend/.next/
 frontend/out/
 frontend/node_modules/
+frontend/package-lock.json
 
 # Vercel
 .vercel
