@@ -23,9 +23,10 @@ RUN set -e && \
     curl -fsSL \
       "https://github.com/github/github-mcp-server/releases/download/${LATEST}/github-mcp-server_Linux_${GOARCH}.tar.gz" \
       -o /tmp/mcp.tar.gz && \
-    tar -xzf /tmp/mcp.tar.gz -C /usr/local/bin github-mcp-server && \
+    tar -xzf /tmp/mcp.tar.gz -C /tmp && \
+    find /tmp -maxdepth 3 -name 'github-mcp-server' -type f | head -1 | xargs -I{} mv {} /usr/local/bin/github-mcp-server && \
     chmod +x /usr/local/bin/github-mcp-server && \
-    rm /tmp/mcp.tar.gz
+    rm -f /tmp/mcp.tar.gz
 
 # --- python dependencies ---
 COPY requirements.txt .
