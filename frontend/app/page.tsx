@@ -33,7 +33,6 @@ const STEP_ICONS: Record<string, string> = {
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState("");
   const [goal, setGoal] = useState("");
-  const [githubToken, setGithubToken] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [analysis, setAnalysis] = useState("");
@@ -64,7 +63,6 @@ export default function Home() {
         body: JSON.stringify({
           repo_url: repoUrl,
           goal,
-          github_token: githubToken || undefined,
         }),
       });
 
@@ -180,23 +178,6 @@ export default function Home() {
                 </button>
               ))}
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              GitHub Token{" "}
-              <span className="text-gray-500 text-xs font-normal">
-                (optional if GITHUB_TOKEN is set on server)
-              </span>
-            </label>
-            <input
-              type="password"
-              value={githubToken}
-              onChange={(e) => setGithubToken(e.target.value)}
-              placeholder="ghp_..."
-              disabled={isAnalyzing}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            />
           </div>
 
           <button
