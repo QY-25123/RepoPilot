@@ -46,7 +46,7 @@ const PIPELINE_STAGES = [
     icon: "✍️",
     label: "Synthesize",
     description:
-      "The Synthesizer (Claude Opus with extended thinking) writes a thorough, goal-focused answer streamed back to you in real time.",
+      "The Synthesizer writes a thorough, goal-focused answer with extended thinking, streamed back to you in real time.",
   },
 ];
 
@@ -164,7 +164,7 @@ export default function Home() {
             color: "var(--muted)",
             marginBottom: "10px",
           }}>
-            GitHub MCP · Claude Opus
+            GitHub MCP · AI Analysis
           </p>
           <h1 style={{
             fontFamily: "Georgia, 'Times New Roman', serif",
