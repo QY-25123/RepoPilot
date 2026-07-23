@@ -61,6 +61,18 @@ class GitHubMCPClient:
             for item in result.content:
                 if hasattr(item, "text") and item.text:
                     parts.append(item.text)
+                elif hasattr(item, "resource"):
+                    # EmbeddedResource — actual file content lives here
+                    resource = item.resource
+                    if hasattr(resource, "text") and resource.text:
+                        parts.append(resource.text)
+                    elif hasattr(resource, "blob") and resource.blob:
+                        import base64
+                        try:
+                            decoded = base64.b64decode(resource.blob).decode("utf-8", errors="replace")
+                            parts.append(decoded)
+                        except Exception:
+                            parts.append(f"[binary blob]")
             content = "\n".join(parts)
             if is_error:
                 return f"[Tool error] {content}"

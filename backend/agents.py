@@ -8,13 +8,16 @@ _client = anthropic.AsyncAnthropic()
 MODEL = "claude-opus-4-8"
 
 SELECTED_TOOLS = {
-    "get_file_contents",
-    "get_repository_tree",
+    "get_file_contents",   # read files AND directory listings (pass a dir path)
     "list_commits",
     "list_branches",
     "list_pull_requests",
+    "pull_request_read",
     "search_code",
     "list_issues",
+    "issue_read",
+    "list_tags",
+    "search_repositories",
 }
 
 MAX_RESEARCHER_ITERATIONS = 8
