@@ -5,7 +5,9 @@ import anthropic
 from mcp_client import GitHubMCPClient
 
 _client = anthropic.AsyncAnthropic()
-MODEL = "claude-opus-4-8"
+PLANNER_MODEL = "claude-haiku-4-5-20251001"
+RESEARCHER_MODEL = "claude-haiku-4-5-20251001"
+SYNTHESIZER_MODEL = "claude-opus-4-8"
 
 SELECTED_TOOLS = {
     "get_file_contents",   # read files AND directory listings (pass a dir path)
@@ -27,7 +29,7 @@ MAX_RESEARCH_CHARS = 60_000
 async def planner_agent(owner: str, repo: str, goal: str) -> str:
     """Agent 1 — produces a focused research plan (no tools, no thinking)."""
     response = await _client.messages.create(
-        model=MODEL,
+        model=PLANNER_MODEL,
         max_tokens=512,
         system=(
             "You are a GitHub repository analyst. Given a user's goal, write a concise "
@@ -77,7 +79,7 @@ async def researcher_agent(
 
     for _ in range(MAX_RESEARCHER_ITERATIONS):
         response = await _client.messages.create(
-            model=MODEL,
+            model=RESEARCHER_MODEL,
             max_tokens=4096,
             system=system,
             messages=messages,
@@ -146,7 +148,7 @@ async def synthesizer_agent(
     )
 
     async with _client.messages.stream(
-        model=MODEL,
+        model=SYNTHESIZER_MODEL,
         max_tokens=4096,
         thinking={"type": "adaptive"},
         system=system,
