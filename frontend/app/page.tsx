@@ -30,6 +30,24 @@ const STEP_ICONS: Record<string, string> = {
   complete: "✅",
 };
 
+const PIPELINE_STAGES = [
+  {
+    icon: "🧠",
+    label: "Plan",
+    description: "Maps what to investigate based on your question",
+  },
+  {
+    icon: "🔍",
+    label: "Research",
+    description: "Pulls commits, files, PRs & code via GitHub MCP",
+  },
+  {
+    icon: "✍️",
+    label: "Synthesize",
+    description: "Writes your answer with Claude's extended thinking",
+  },
+];
+
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState("");
   const [goal, setGoal] = useState("");
@@ -60,10 +78,7 @@ export default function Home() {
       const res = await fetch(`${apiUrl}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          repo_url: repoUrl,
-          goal,
-        }),
+        body: JSON.stringify({ repo_url: repoUrl, goal }),
       });
 
       if (!res.ok) {
@@ -127,21 +142,62 @@ export default function Home() {
   const hasOutput = events.length > 0 || analysis !== "" || isAnalyzing;
 
   return (
-    <main className="min-h-screen bg-gray-950 text-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-12 space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-2">GitHub Repo Analyzer</h1>
-          <p className="text-gray-400">
-            Sequential multi-agent AI analysis powered by GitHub MCP + Claude
+    <main className="min-h-screen bg-rose-50 dark:bg-rose-ground-dark text-rose-950 dark:text-rose-50">
+
+      {/* ── Hero ─────────────────────────────────────────── */}
+      <header className="border-b border-rose-200 dark:border-rose-tint-dark bg-white/70 dark:bg-rose-surface-dark/70 backdrop-blur-sm">
+        <div className="max-w-2xl mx-auto px-6 py-16 text-center">
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-400 dark:text-rose-500 mb-5">
+            Multi-Agent AI · GitHub MCP · Claude Opus
           </p>
+          <h1
+            className="font-serif text-5xl sm:text-6xl font-normal leading-tight text-rose-950 dark:text-rose-50 mb-5"
+            style={{ textWrap: "balance" } as React.CSSProperties}
+          >
+            Understand any repo
+            <br />
+            <em className="text-rose-600 dark:text-rose-400 not-italic">in minutes</em>
+          </h1>
+          <p
+            className="text-rose-700 dark:text-rose-300 text-base sm:text-lg leading-relaxed max-w-md mx-auto"
+            style={{ textWrap: "balance" } as React.CSSProperties}
+          >
+            Paste a GitHub URL, ask your question — three AI agents collaborate
+            to research the codebase and write a thorough answer for you.
+          </p>
+
+          {/* Pipeline diagram */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-10">
+            {PIPELINE_STAGES.map((stage, i) => (
+              <div key={stage.label} className="flex items-center gap-2">
+                <div className="bg-white dark:bg-rose-tint-dark border border-rose-200 dark:border-rose-rim-dark rounded-xl px-5 py-4 w-44 text-center shadow-sm shadow-rose-100 dark:shadow-none">
+                  <div className="text-2xl mb-1.5">{stage.icon}</div>
+                  <div className="text-sm font-semibold text-rose-900 dark:text-rose-100 mb-1">
+                    {stage.label}
+                  </div>
+                  <div className="text-[11px] leading-snug text-rose-500 dark:text-rose-400">
+                    {stage.description}
+                  </div>
+                </div>
+                {i < PIPELINE_STAGES.length - 1 && (
+                  <span className="text-rose-300 dark:text-rose-700 text-lg hidden sm:block select-none">
+                    →
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
+      </header>
+
+      {/* ── Main content ─────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
 
         {/* Input form */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+        <section className="bg-white dark:bg-rose-surface-dark border border-rose-200 dark:border-rose-tint-dark rounded-2xl p-6 space-y-5 shadow-sm shadow-rose-100 dark:shadow-none">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              GitHub Repository URL
+            <label className="block text-xs font-semibold tracking-widest uppercase text-rose-400 dark:text-rose-500 mb-2">
+              Repository URL
             </label>
             <input
               type="text"
@@ -150,13 +206,13 @@ export default function Home() {
               onKeyDown={(e) => e.key === "Enter" && canSubmit && analyze()}
               placeholder="https://github.com/owner/repo"
               disabled={isAnalyzing}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full bg-rose-50 dark:bg-rose-tint-dark border border-rose-200 dark:border-rose-rim-dark rounded-lg px-4 py-2.5 text-rose-950 dark:text-rose-50 placeholder-rose-300 dark:placeholder-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:focus:ring-rose-500 disabled:opacity-50 text-sm transition-shadow"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Your question / goal
+            <label className="block text-xs font-semibold tracking-widest uppercase text-rose-400 dark:text-rose-500 mb-2">
+              Your Question
             </label>
             <textarea
               value={goal}
@@ -164,15 +220,15 @@ export default function Home() {
               placeholder="What would you like to know about this repository?"
               rows={3}
               disabled={isAnalyzing}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50"
+              className="w-full bg-rose-50 dark:bg-rose-tint-dark border border-rose-200 dark:border-rose-rim-dark rounded-lg px-4 py-2.5 text-rose-950 dark:text-rose-50 placeholder-rose-300 dark:placeholder-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:focus:ring-rose-500 resize-none disabled:opacity-50 text-sm transition-shadow"
             />
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2.5">
               {EXAMPLE_GOALS.map((eg) => (
                 <button
                   key={eg}
                   onClick={() => setGoal(eg)}
                   disabled={isAnalyzing}
-                  className="text-xs text-blue-400 hover:text-blue-300 bg-blue-950 hover:bg-blue-900 px-2 py-1 rounded transition-colors disabled:opacity-40"
+                  className="text-[11px] text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-tint-dark hover:bg-rose-100 dark:hover:bg-rose-rim-dark border border-rose-200 dark:border-rose-rim-dark px-2.5 py-1 rounded-full transition-colors disabled:opacity-40"
                 >
                   {eg}
                 </button>
@@ -183,7 +239,7 @@ export default function Home() {
           <button
             onClick={analyze}
             disabled={!canSubmit}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full py-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 disabled:bg-rose-200 dark:disabled:bg-rose-tint-dark disabled:text-rose-400 dark:disabled:text-rose-700 text-white font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-rose-surface-dark"
           >
             {isAnalyzing ? (
               <span className="flex items-center justify-center gap-2">
@@ -198,36 +254,39 @@ export default function Home() {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-950 border border-red-800 rounded-xl p-4 text-red-300 text-sm">
-            <strong>Error:</strong> {error}
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
+            <strong className="font-semibold">Error:</strong> {error}
           </div>
         )}
 
         {/* Pipeline progress + output */}
         {hasOutput && (
           <div className="space-y-4">
+
             {/* Agent steps */}
-            <section className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+            <section className="bg-white dark:bg-rose-surface-dark border border-rose-200 dark:border-rose-tint-dark rounded-2xl p-5 shadow-sm shadow-rose-100 dark:shadow-none">
+              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-400 dark:text-rose-500 mb-4">
                 Agent Pipeline
-              </h2>
-              <div className="space-y-2.5">
+              </p>
+              <div className="space-y-3">
                 {events.map((ev, i) => {
                   if (ev.type === "status") {
                     return (
                       <div key={i} className="flex items-start gap-3 text-sm">
-                        <span className="text-base leading-tight">
+                        <span className="text-base leading-none mt-0.5">
                           {STEP_ICONS[ev.step ?? ""] ?? "⚙️"}
                         </span>
-                        <span className="text-gray-300">{ev.message}</span>
+                        <span className="text-rose-800 dark:text-rose-200">{ev.message}</span>
                       </div>
                     );
                   }
                   if (ev.type === "plan") {
                     return (
-                      <div key={i} className="ml-7 space-y-1">
-                        <p className="text-xs text-gray-500 font-medium">Research plan</p>
-                        <pre className="text-xs text-gray-400 bg-gray-800 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                      <div key={i} className="ml-7 space-y-1.5">
+                        <p className="text-[10px] font-semibold tracking-widest uppercase text-rose-400 dark:text-rose-500">
+                          Research plan
+                        </p>
+                        <pre className="text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-tint-dark border border-rose-100 dark:border-rose-rim-dark rounded-lg p-3 whitespace-pre-wrap leading-relaxed overflow-x-auto">
                           {(ev.content ?? "").slice(0, 600)}
                           {(ev.content ?? "").length > 600 && "…"}
                         </pre>
@@ -241,13 +300,15 @@ export default function Home() {
                       .join(", ");
                     return (
                       <div key={i} className="flex items-start gap-3 text-sm ml-7">
-                        <span className="text-gray-500 shrink-0">›</span>
-                        <span className="text-gray-400">
-                          <code className="text-blue-400 bg-blue-950 px-1 py-0.5 rounded text-xs">
+                        <span className="text-rose-300 dark:text-rose-700 shrink-0 mt-0.5">›</span>
+                        <span>
+                          <code className="text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-tint-dark border border-rose-100 dark:border-rose-rim-dark px-1.5 py-0.5 rounded text-xs font-mono">
                             {ev.tool}
                           </code>
                           {inputStr && (
-                            <span className="text-gray-600 text-xs"> ({inputStr})</span>
+                            <span className="text-rose-400 dark:text-rose-600 text-xs ml-1.5">
+                              ({inputStr})
+                            </span>
                           )}
                         </span>
                       </div>
@@ -255,8 +316,8 @@ export default function Home() {
                   }
                   if (ev.type === "tool_result") {
                     return (
-                      <div key={i} className="flex items-start gap-3 text-xs ml-9 text-gray-600">
-                        <span>↳ received {(ev.chars ?? 0).toLocaleString()} chars</span>
+                      <div key={i} className="flex items-start gap-3 text-xs ml-10 text-rose-400 dark:text-rose-600">
+                        <span className="tabular-nums">↳ {(ev.chars ?? 0).toLocaleString()} chars received</span>
                       </div>
                     );
                   }
@@ -264,8 +325,8 @@ export default function Home() {
                 })}
 
                 {isAnalyzing && currentStep && currentStep !== "complete" && (
-                  <div className="flex items-center gap-2 text-sm text-blue-400 ml-7">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  <div className="flex items-center gap-2 text-sm text-rose-500 dark:text-rose-400 ml-7">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400 dark:bg-rose-500 animate-pulse" />
                     <span>Working…</span>
                   </div>
                 )}
@@ -274,14 +335,14 @@ export default function Home() {
 
             {/* Streaming analysis */}
             {analysis && (
-              <section className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+              <section className="bg-white dark:bg-rose-surface-dark border border-rose-200 dark:border-rose-tint-dark rounded-2xl p-5 shadow-sm shadow-rose-100 dark:shadow-none">
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-400 dark:text-rose-500 mb-4">
                   Analysis
-                </h2>
-                <div className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
+                </p>
+                <div className="text-rose-900 dark:text-rose-100 text-sm leading-relaxed whitespace-pre-wrap">
                   {analysis}
                   {isAnalyzing && currentStep === "synthesizing" && (
-                    <span className="inline-block w-2 h-4 bg-blue-400 ml-0.5 align-text-bottom animate-pulse" />
+                    <span className="inline-block w-2 h-4 bg-rose-400 ml-0.5 align-text-bottom animate-pulse" />
                   )}
                 </div>
               </section>
