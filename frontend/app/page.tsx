@@ -11,7 +11,6 @@ interface StreamEvent {
   tool?: string;
   input?: Record<string, string>;
   chars?: number;
-  usage?: { input_tokens: number; output_tokens: number };
 }
 
 const EXAMPLE_GOALS = [
@@ -34,19 +33,29 @@ const PIPELINE_STAGES = [
   {
     icon: "🧠",
     label: "Plan",
-    description: "Maps what to investigate based on your question",
+    description:
+      "The Planner agent reads your goal and maps an investigation strategy tailored to your question.",
   },
   {
     icon: "🔍",
     label: "Research",
-    description: "Pulls commits, files, PRs & code via GitHub MCP",
+    description:
+      "The Researcher uses 7 GitHub MCP tools — commits, files, PRs, issues, branches, and code search — to gather real data.",
   },
   {
     icon: "✍️",
     label: "Synthesize",
-    description: "Writes your answer with Claude's extended thinking",
+    description:
+      "The Synthesizer (Claude Opus with extended thinking) writes a thorough, goal-focused answer streamed back to you in real time.",
   },
 ];
+
+const card: React.CSSProperties = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: "16px",
+  boxShadow: "var(--shadow-card)",
+};
 
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState("");
@@ -142,63 +151,37 @@ export default function Home() {
   const hasOutput = events.length > 0 || analysis !== "" || isAnalyzing;
 
   return (
-    <main className="min-h-screen bg-rose-50 dark:bg-rose-ground-dark text-rose-950 dark:text-rose-50">
+    <main style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+      <div style={{ maxWidth: "680px", margin: "0 auto", padding: "48px 20px 80px" }}>
 
-      {/* ── Hero ─────────────────────────────────────────── */}
-      <header className="border-b border-rose-200 dark:border-rose-tint-dark bg-white/70 dark:bg-rose-surface-dark/70 backdrop-blur-sm">
-        <div className="max-w-2xl mx-auto px-6 py-16 text-center">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-400 dark:text-rose-500 mb-5">
-            Multi-Agent AI · GitHub MCP · Claude Opus
+        {/* ── Top bar ──────────────────────────────────── */}
+        <div style={{ marginBottom: "36px" }}>
+          <p style={{
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--muted)",
+            marginBottom: "10px",
+          }}>
+            GitHub MCP · Claude Opus
           </p>
-          <h1
-            className="font-serif text-5xl sm:text-6xl font-normal leading-tight text-rose-950 dark:text-rose-50 mb-5"
-            style={{ textWrap: "balance" } as React.CSSProperties}
-          >
-            Understand any repo
-            <br />
-            <em className="text-rose-600 dark:text-rose-400 not-italic">in minutes</em>
+          <h1 style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontSize: "clamp(28px, 5vw, 40px)",
+            fontWeight: 400,
+            lineHeight: 1.2,
+            color: "var(--text)",
+            margin: 0,
+          }}>
+            GitHub Repo Analyzer
           </h1>
-          <p
-            className="text-rose-700 dark:text-rose-300 text-base sm:text-lg leading-relaxed max-w-md mx-auto"
-            style={{ textWrap: "balance" } as React.CSSProperties}
-          >
-            Paste a GitHub URL, ask your question — three AI agents collaborate
-            to research the codebase and write a thorough answer for you.
-          </p>
-
-          {/* Pipeline diagram */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-10">
-            {PIPELINE_STAGES.map((stage, i) => (
-              <div key={stage.label} className="flex items-center gap-2">
-                <div className="bg-white dark:bg-rose-tint-dark border border-rose-200 dark:border-rose-rim-dark rounded-xl px-5 py-4 w-44 text-center shadow-sm shadow-rose-100 dark:shadow-none">
-                  <div className="text-2xl mb-1.5">{stage.icon}</div>
-                  <div className="text-sm font-semibold text-rose-900 dark:text-rose-100 mb-1">
-                    {stage.label}
-                  </div>
-                  <div className="text-[11px] leading-snug text-rose-500 dark:text-rose-400">
-                    {stage.description}
-                  </div>
-                </div>
-                {i < PIPELINE_STAGES.length - 1 && (
-                  <span className="text-rose-300 dark:text-rose-700 text-lg hidden sm:block select-none">
-                    →
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
-      </header>
 
-      {/* ── Main content ─────────────────────────────────── */}
-      <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
-
-        {/* Input form */}
-        <section className="bg-white dark:bg-rose-surface-dark border border-rose-200 dark:border-rose-tint-dark rounded-2xl p-6 space-y-5 shadow-sm shadow-rose-100 dark:shadow-none">
-          <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase text-rose-400 dark:text-rose-500 mb-2">
-              Repository URL
-            </label>
+        {/* ── Analyzer form ────────────────────────────── */}
+        <section style={{ ...card, padding: "28px" }}>
+          <div style={{ marginBottom: "18px" }}>
+            <label style={labelStyle}>Repository URL</label>
             <input
               type="text"
               value={repoUrl}
@@ -206,29 +189,47 @@ export default function Home() {
               onKeyDown={(e) => e.key === "Enter" && canSubmit && analyze()}
               placeholder="https://github.com/owner/repo"
               disabled={isAnalyzing}
-              className="w-full bg-rose-50 dark:bg-rose-tint-dark border border-rose-200 dark:border-rose-rim-dark rounded-lg px-4 py-2.5 text-rose-950 dark:text-rose-50 placeholder-rose-300 dark:placeholder-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:focus:ring-rose-500 disabled:opacity-50 text-sm transition-shadow"
+              style={inputStyle(isAnalyzing)}
+              onFocus={(e) => (e.currentTarget.style.boxShadow = "0 0 0 3px var(--ring)")}
+              onBlur={(e) => (e.currentTarget.style.boxShadow = "none")}
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase text-rose-400 dark:text-rose-500 mb-2">
-              Your Question
-            </label>
+          <div style={{ marginBottom: "20px" }}>
+            <label style={labelStyle}>Your question</label>
             <textarea
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="What would you like to know about this repository?"
               rows={3}
               disabled={isAnalyzing}
-              className="w-full bg-rose-50 dark:bg-rose-tint-dark border border-rose-200 dark:border-rose-rim-dark rounded-lg px-4 py-2.5 text-rose-950 dark:text-rose-50 placeholder-rose-300 dark:placeholder-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:focus:ring-rose-500 resize-none disabled:opacity-50 text-sm transition-shadow"
+              style={{ ...inputStyle(isAnalyzing), resize: "none" }}
+              onFocus={(e) => (e.currentTarget.style.boxShadow = "0 0 0 3px var(--ring)")}
+              onBlur={(e) => (e.currentTarget.style.boxShadow = "none")}
             />
-            <div className="flex flex-wrap gap-2 mt-2.5">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "10px" }}>
               {EXAMPLE_GOALS.map((eg) => (
                 <button
                   key={eg}
                   onClick={() => setGoal(eg)}
                   disabled={isAnalyzing}
-                  className="text-[11px] text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-tint-dark hover:bg-rose-100 dark:hover:bg-rose-rim-dark border border-rose-200 dark:border-rose-rim-dark px-2.5 py-1 rounded-full transition-colors disabled:opacity-40"
+                  style={{
+                    fontSize: "11px",
+                    padding: "4px 10px",
+                    borderRadius: "20px",
+                    border: "1px solid var(--chip-border)",
+                    background: "var(--chip-bg)",
+                    color: "var(--accent)",
+                    cursor: isAnalyzing ? "default" : "pointer",
+                    opacity: isAnalyzing ? 0.45 : 1,
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isAnalyzing) e.currentTarget.style.background = "var(--accent-muted)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--chip-bg)";
+                  }}
                 >
                   {eg}
                 </button>
@@ -239,11 +240,35 @@ export default function Home() {
           <button
             onClick={analyze}
             disabled={!canSubmit}
-            className="w-full py-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 disabled:bg-rose-200 dark:disabled:bg-rose-tint-dark disabled:text-rose-400 dark:disabled:text-rose-700 text-white font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-rose-surface-dark"
+            style={{
+              width: "100%",
+              padding: "13px",
+              borderRadius: "10px",
+              border: "none",
+              background: canSubmit ? "var(--accent)" : "var(--border)",
+              color: canSubmit ? "#fff" : "var(--muted)",
+              fontWeight: 600,
+              fontSize: "15px",
+              cursor: canSubmit ? "pointer" : "default",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (canSubmit) e.currentTarget.style.background = "var(--accent-hover)";
+            }}
+            onMouseLeave={(e) => {
+              if (canSubmit) e.currentTarget.style.background = "var(--accent)";
+            }}
           >
             {isAnalyzing ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <span style={{
+                  width: "16px", height: "16px",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "#fff",
+                  borderRadius: "50%",
+                  display: "inline-block",
+                  animation: "spin 0.7s linear infinite",
+                }} />
                 Analyzing…
               </span>
             ) : (
@@ -252,41 +277,56 @@ export default function Home() {
           </button>
         </section>
 
-        {/* Error */}
+        {/* ── Error ────────────────────────────────────── */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
-            <strong className="font-semibold">Error:</strong> {error}
+          <div style={{
+            marginTop: "16px",
+            padding: "14px 16px",
+            borderRadius: "12px",
+            background: "#FFF0F0",
+            border: "1px solid #FFCCCC",
+            color: "#B02020",
+            fontSize: "14px",
+          }}>
+            <strong style={{ fontWeight: 600 }}>Error: </strong>{error}
           </div>
         )}
 
-        {/* Pipeline progress + output */}
+        {/* ── Pipeline output ──────────────────────────── */}
         {hasOutput && (
-          <div className="space-y-4">
+          <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "14px" }}>
 
             {/* Agent steps */}
-            <section className="bg-white dark:bg-rose-surface-dark border border-rose-200 dark:border-rose-tint-dark rounded-2xl p-5 shadow-sm shadow-rose-100 dark:shadow-none">
-              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-400 dark:text-rose-500 mb-4">
-                Agent Pipeline
-              </p>
-              <div className="space-y-3">
+            <section style={{ ...card, padding: "22px 24px" }}>
+              <p style={eyebrowStyle}>Agent Pipeline</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {events.map((ev, i) => {
                   if (ev.type === "status") {
                     return (
-                      <div key={i} className="flex items-start gap-3 text-sm">
-                        <span className="text-base leading-none mt-0.5">
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "14px" }}>
+                        <span style={{ fontSize: "16px", lineHeight: 1, marginTop: "1px" }}>
                           {STEP_ICONS[ev.step ?? ""] ?? "⚙️"}
                         </span>
-                        <span className="text-rose-800 dark:text-rose-200">{ev.message}</span>
+                        <span style={{ color: "var(--text-sub)" }}>{ev.message}</span>
                       </div>
                     );
                   }
                   if (ev.type === "plan") {
                     return (
-                      <div key={i} className="ml-7 space-y-1.5">
-                        <p className="text-[10px] font-semibold tracking-widest uppercase text-rose-400 dark:text-rose-500">
-                          Research plan
-                        </p>
-                        <pre className="text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-tint-dark border border-rose-100 dark:border-rose-rim-dark rounded-lg p-3 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                      <div key={i} style={{ marginLeft: "26px" }}>
+                        <p style={{ ...eyebrowStyle, marginBottom: "6px" }}>Research plan</p>
+                        <pre style={{
+                          fontSize: "12px",
+                          color: "var(--muted)",
+                          background: "var(--chip-bg)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          whiteSpace: "pre-wrap",
+                          lineHeight: 1.6,
+                          margin: 0,
+                          overflowX: "auto",
+                        }}>
                           {(ev.content ?? "").slice(0, 600)}
                           {(ev.content ?? "").length > 600 && "…"}
                         </pre>
@@ -299,14 +339,22 @@ export default function Home() {
                       .map(([k, v]) => `${k}=${v}`)
                       .join(", ");
                     return (
-                      <div key={i} className="flex items-start gap-3 text-sm ml-7">
-                        <span className="text-rose-300 dark:text-rose-700 shrink-0 mt-0.5">›</span>
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginLeft: "26px", fontSize: "13px" }}>
+                        <span style={{ color: "var(--border)", marginTop: "2px" }}>›</span>
                         <span>
-                          <code className="text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-tint-dark border border-rose-100 dark:border-rose-rim-dark px-1.5 py-0.5 rounded text-xs font-mono">
+                          <code style={{
+                            fontSize: "12px",
+                            fontFamily: "Menlo, Monaco, 'Courier New', monospace",
+                            color: "var(--accent)",
+                            background: "var(--chip-bg)",
+                            border: "1px solid var(--chip-border)",
+                            borderRadius: "5px",
+                            padding: "1px 6px",
+                          }}>
                             {ev.tool}
                           </code>
                           {inputStr && (
-                            <span className="text-rose-400 dark:text-rose-600 text-xs ml-1.5">
+                            <span style={{ color: "var(--muted)", fontSize: "11px", marginLeft: "6px" }}>
                               ({inputStr})
                             </span>
                           )}
@@ -316,8 +364,13 @@ export default function Home() {
                   }
                   if (ev.type === "tool_result") {
                     return (
-                      <div key={i} className="flex items-start gap-3 text-xs ml-10 text-rose-400 dark:text-rose-600">
-                        <span className="tabular-nums">↳ {(ev.chars ?? 0).toLocaleString()} chars received</span>
+                      <div key={i} style={{
+                        marginLeft: "44px",
+                        fontSize: "11px",
+                        color: "var(--muted)",
+                        fontVariantNumeric: "tabular-nums",
+                      }}>
+                        ↳ {(ev.chars ?? 0).toLocaleString()} chars received
                       </div>
                     );
                   }
@@ -325,9 +378,16 @@ export default function Home() {
                 })}
 
                 {isAnalyzing && currentStep && currentStep !== "complete" && (
-                  <div className="flex items-center gap-2 text-sm text-rose-500 dark:text-rose-400 ml-7">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400 dark:bg-rose-500 animate-pulse" />
-                    <span>Working…</span>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: "8px",
+                    marginLeft: "26px", fontSize: "13px", color: "var(--accent)",
+                  }}>
+                    <span style={{
+                      width: "7px", height: "7px", borderRadius: "50%",
+                      background: "var(--accent)",
+                      animation: "pulse 1.4s ease-in-out infinite",
+                    }} />
+                    Working…
                   </div>
                 )}
               </div>
@@ -335,14 +395,25 @@ export default function Home() {
 
             {/* Streaming analysis */}
             {analysis && (
-              <section className="bg-white dark:bg-rose-surface-dark border border-rose-200 dark:border-rose-tint-dark rounded-2xl p-5 shadow-sm shadow-rose-100 dark:shadow-none">
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-400 dark:text-rose-500 mb-4">
-                  Analysis
-                </p>
-                <div className="text-rose-900 dark:text-rose-100 text-sm leading-relaxed whitespace-pre-wrap">
+              <section style={{ ...card, padding: "22px 24px" }}>
+                <p style={eyebrowStyle}>Analysis</p>
+                <div style={{
+                  fontSize: "14px",
+                  lineHeight: 1.75,
+                  color: "var(--text)",
+                  whiteSpace: "pre-wrap",
+                }}>
                   {analysis}
                   {isAnalyzing && currentStep === "synthesizing" && (
-                    <span className="inline-block w-2 h-4 bg-rose-400 ml-0.5 align-text-bottom animate-pulse" />
+                    <span style={{
+                      display: "inline-block",
+                      width: "8px",
+                      height: "15px",
+                      background: "var(--accent)",
+                      marginLeft: "2px",
+                      verticalAlign: "text-bottom",
+                      animation: "pulse 1s ease-in-out infinite",
+                    }} />
                   )}
                 </div>
               </section>
@@ -350,8 +421,123 @@ export default function Home() {
           </div>
         )}
 
+        {/* ── About / How it works ─────────────────────── */}
+        <section style={{ marginTop: "56px" }}>
+          <p style={eyebrowStyle}>How it works</p>
+          <h2 style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontSize: "24px",
+            fontWeight: 400,
+            color: "var(--text)",
+            margin: "8px 0 6px",
+          }}>
+            Three agents, one answer
+          </h2>
+          <p style={{ fontSize: "14px", color: "var(--muted)", lineHeight: 1.7, margin: "0 0 28px" }}>
+            Drop in any public GitHub repository URL and ask your question in plain
+            English. A sequential pipeline of three AI agents handles the rest —
+            no manual code reading required.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {PIPELINE_STAGES.map((stage, i) => (
+              <div
+                key={stage.label}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "16px",
+                  ...card,
+                  padding: "18px 20px",
+                }}
+              >
+                <div style={{
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "10px",
+                  background: "var(--chip-bg)",
+                  border: "1px solid var(--border)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "20px",
+                  flexShrink: 0,
+                }}>
+                  {stage.icon}
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <span style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                    }}>
+                      Step {i + 1}
+                    </span>
+                    <span style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "var(--text)",
+                    }}>
+                      {stage.label}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.6, margin: 0 }}>
+                    {stage.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <div ref={bottomRef} />
       </div>
+
+      <style>{`
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes pulse  { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        * { box-sizing: border-box; }
+        input, textarea, button { font-family: inherit; }
+        input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.7; }
+      `}</style>
     </main>
   );
+}
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: "11px",
+  fontWeight: 600,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "var(--muted)",
+  marginBottom: "8px",
+};
+
+const eyebrowStyle: React.CSSProperties = {
+  fontSize: "10px",
+  fontWeight: 700,
+  letterSpacing: "0.18em",
+  textTransform: "uppercase",
+  color: "var(--muted)",
+  margin: "0 0 14px",
+};
+
+function inputStyle(disabled: boolean): React.CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    padding: "10px 14px",
+    fontSize: "14px",
+    color: "var(--text)",
+    background: "var(--bg)",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+    outline: "none",
+    opacity: disabled ? 0.5 : 1,
+    transition: "box-shadow 0.15s",
+  };
 }
