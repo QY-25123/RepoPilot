@@ -27,13 +27,14 @@ jobs:
         id: auth
         with:
           workload_identity_provider: projects/998479981690/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-          token_format: access_token
+          project_id: repopilot-503121
 
-      - uses: docker/login-action@v3
-        with:
-          registry: us-central1-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          ACCESS_TOKEN=$(gcloud auth print-access-token --credential-file="${{ steps.auth.outputs.credentials_file_path }}")
+          echo "$ACCESS_TOKEN" | docker login -u oauth2accesstoken --password-stdin us-central1-docker.pkg.dev
 
       - name: Build and push image
         run: |
@@ -43,8 +44,6 @@ jobs:
             ./backend
           docker push $IMAGE:${{ github.sha }}
           docker push $IMAGE:latest
-
-      - uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy to Cloud Run
         run: |
