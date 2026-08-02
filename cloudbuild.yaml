@@ -1,0 +1,35 @@
+steps:
+  # Build the Docker image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - us-central1-docker.pkg.dev/repopilot-503121/repopilot/backend:$COMMIT_SHA
+      - -t
+      - us-central1-docker.pkg.dev/repopilot-503121/repopilot/backend:latest
+      - ./backend
+
+  # Push both tags
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - us-central1-docker.pkg.dev/repopilot-503121/repopilot/backend
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - repopilot-backend
+      - --image
+      - us-central1-docker.pkg.dev/repopilot-503121/repopilot/backend:$COMMIT_SHA
+      - --region
+      - us-central1
+      - --platform
+      - managed
+      - --allow-unauthenticated
+
+options:
+  logging: CLOUD_LOGGING_ONLY
