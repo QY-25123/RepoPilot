@@ -7,7 +7,7 @@ from mcp_client import GitHubMCPClient
 _client = anthropic.AsyncAnthropic()
 PLANNER_MODEL = "claude-haiku-4-5-20251001"
 RESEARCHER_MODEL = "claude-haiku-4-5-20251001"
-SYNTHESIZER_MODEL = "claude-opus-4-8"
+SYNTHESIZER_MODEL = "claude-haiku-4-5-20251001"
 
 SELECTED_TOOLS = {
     "get_file_contents",   # read files AND directory listings (pass a dir path)
@@ -26,16 +26,12 @@ MAX_RESEARCHER_ITERATIONS = 8
 MAX_RESEARCH_CHARS = 60_000
 
 
-async def planner_agent(owner: str, repo: str, goal: str) -> str:
+async def planner_agent(owner: str, repo: str, goal: str, feature_cfg: dict) -> str:
     """Agent 1 — produces a focused research plan (no tools, no thinking)."""
     response = await _client.messages.create(
         model=PLANNER_MODEL,
         max_tokens=512,
-        system=(
-            "You are a GitHub repository analyst. Given a user's goal, write a concise "
-            "bullet-point research plan specifying exactly what to fetch from the repository "
-            "to answer the question. Be specific about file paths and API calls to make."
-        ),
+        system=feature_cfg["planner_system"],
         messages=[
             {
                 "role": "user",
@@ -57,12 +53,10 @@ async def researcher_agent(
     plan: str,
     claude_tools: list[dict],
     mcp: GitHubMCPClient,
+    feature_cfg: dict,
 ) -> AsyncGenerator[dict, None]:
     """Agent 2 — autonomously calls GitHub MCP tools to gather data."""
-    system = (
-        "You are a GitHub repository researcher. Use the available tools to gather "
-        "information from the repository. Follow the research plan and be thorough."
-    )
+    system = feature_cfg["researcher_system"]
     messages: list[dict] = [
         {
             "role": "user",
@@ -133,13 +127,10 @@ async def synthesizer_agent(
     repo: str,
     goal: str,
     research_data: str,
+    feature_cfg: dict,
 ) -> AsyncGenerator[dict, None]:
-    """Agent 3 — streams the final analysis using adaptive thinking."""
-    system = (
-        "You are an expert at explaining GitHub repositories and their practices. "
-        "Based on the data gathered from the repository, provide a clear, comprehensive, "
-        "and well-structured answer. Format your response in readable markdown."
-    )
+    """Agent 3 — streams the final analysis."""
+    system = feature_cfg["synthesizer_system"]
     prompt = (
         f"Repository: https://github.com/{owner}/{repo}\n"
         f"User's question: {goal}\n\n"
@@ -150,7 +141,6 @@ async def synthesizer_agent(
     async with _client.messages.stream(
         model=SYNTHESIZER_MODEL,
         max_tokens=4096,
-        thinking={"type": "adaptive"},
         system=system,
         messages=[{"role": "user", "content": prompt}],
     ) as stream:

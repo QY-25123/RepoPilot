@@ -26,6 +26,7 @@ app.add_middleware(
 class AnalyzeRequest(BaseModel):
     repo_url: str
     goal: str
+    feature_id: str = "custom"
     github_token: str | None = None
 
 
@@ -60,7 +61,7 @@ async def analyze(request: AnalyzeRequest) -> StreamingResponse:
 
     async def event_generator():
         try:
-            async for event in run_analysis_pipeline(owner, repo, request.goal, github_token):
+            async for event in run_analysis_pipeline(owner, repo, request.goal, github_token, request.feature_id):
                 yield f"data: {json.dumps(event)}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
