@@ -33,7 +33,7 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: |
-          ACCESS_TOKEN=$(gcloud auth print-access-token --credential-file="${{ steps.auth.outputs.credentials_file_path }}")
+          ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
           echo "$ACCESS_TOKEN" | docker login -u oauth2accesstoken --password-stdin us-central1-docker.pkg.dev
 
       - name: Build and push image
