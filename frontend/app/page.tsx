@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface StreamEvent {
   type: string;
@@ -471,13 +473,10 @@ export default function Home() {
             {analysis && (
               <section style={{ ...card, padding: "22px 24px" }}>
                 <p style={eyebrowStyle}>Analysis</p>
-                <div style={{
-                  fontSize: "14px",
-                  lineHeight: 1.75,
-                  color: "var(--text)",
-                  whiteSpace: "pre-wrap",
-                }}>
-                  {analysis}
+                <div className="md-body">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {analysis}
+                  </ReactMarkdown>
                   {isAnalyzing && currentStep === "synthesizing" && (
                     <span style={{
                       display: "inline-block",
@@ -575,6 +574,34 @@ export default function Home() {
         * { box-sizing: border-box; }
         input, textarea, button { font-family: inherit; }
         input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.7; }
+
+        /* ── Markdown body ── */
+        .md-body { font-size: 14px; line-height: 1.75; color: var(--text); }
+        .md-body > * + * { margin-top: 0.85em; }
+        .md-body h1 { font-family: Georgia, serif; font-size: 22px; font-weight: 400; color: var(--text); margin: 1.2em 0 0.4em; }
+        .md-body h2 { font-size: 16px; font-weight: 700; color: var(--text); margin: 1.2em 0 0.4em; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+        .md-body h3 { font-size: 14px; font-weight: 700; color: var(--text); margin: 1em 0 0.3em; }
+        .md-body h4, .md-body h5 { font-size: 13px; font-weight: 600; color: var(--text); margin: 0.8em 0 0.2em; }
+        .md-body p { margin: 0; }
+        .md-body ul, .md-body ol { padding-left: 1.4em; margin: 0; }
+        .md-body li + li { margin-top: 0.25em; }
+        .md-body li > ul, .md-body li > ol { margin-top: 0.25em; }
+        .md-body strong { font-weight: 600; }
+        .md-body em { font-style: italic; }
+        .md-body code { font-family: Menlo, Monaco, 'Courier New', monospace; font-size: 12px; background: var(--chip-bg); border: 1px solid var(--chip-border); border-radius: 4px; padding: 1px 5px; }
+        .md-body pre { background: var(--chip-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; }
+        .md-body pre code { background: none; border: none; padding: 0; font-size: 12px; }
+        .md-body blockquote { border-left: 3px solid var(--border); margin: 0; padding-left: 14px; color: var(--muted); }
+        .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1.2em 0; }
+        .md-body a { color: var(--accent); text-decoration: none; }
+        .md-body a:hover { text-decoration: underline; }
+
+        /* ── GFM tables ── */
+        .md-body table { width: 100%; border-collapse: collapse; font-size: 13px; overflow-x: auto; display: block; }
+        .md-body th { text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 6px 12px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+        .md-body td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        .md-body tr:last-child td { border-bottom: none; }
+        .md-body tr:hover td { background: var(--chip-bg); }
       `}</style>
     </main>
   );
