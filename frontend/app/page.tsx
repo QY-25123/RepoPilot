@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 interface StreamEvent {
   type: string;
@@ -110,11 +110,6 @@ export default function Home() {
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState("");
   const analysisRef = useRef("");
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [events, analysis]);
 
   const analyze = async () => {
     if (!repoUrl.trim() || !goal.trim()) return;
@@ -572,7 +567,6 @@ export default function Home() {
           </div>
         </section>
 
-        <div ref={bottomRef} />
       </div>
 
       <style>{`
