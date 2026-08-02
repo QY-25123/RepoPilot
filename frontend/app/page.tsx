@@ -13,11 +13,54 @@ interface StreamEvent {
   chars?: number;
 }
 
-const EXAMPLE_GOALS = [
-  "Give me an overview of what this repository is about",
-  "What's the development workflow and CI/CD pipeline?",
-  "How do I contribute? What's the PR process?",
-  "What are the main components and architecture?",
+const FEATURES = [
+  {
+    id: "overview",
+    icon: "📖",
+    label: "Learn the Repo",
+    description: "Architecture, tech stack, and how to get started",
+    defaultGoal:
+      "Give me a comprehensive overview of this repository — what it does, how it's structured, the tech stack, and how to get started.",
+  },
+  {
+    id: "history",
+    icon: "📅",
+    label: "Historical Analysis",
+    description: "Evolution, milestones, and contributor patterns",
+    defaultGoal:
+      "Analyze how this repository has evolved — major milestones, release history, contributor patterns, and how the focus has shifted over time.",
+  },
+  {
+    id: "pr_issues",
+    icon: "🔄",
+    label: "PR & Issue Health",
+    description: "Community health, workflow patterns, and open work",
+    defaultGoal:
+      "Assess the health of this repository's PR and issue workflow — response times, bottlenecks, contribution patterns, and the state of open work.",
+  },
+  {
+    id: "security",
+    icon: "🔒",
+    label: "Security Audit",
+    description: "Risks, vulnerabilities, and security practices",
+    defaultGoal:
+      "Audit this repository for security risks — dependency vulnerabilities, dangerous code patterns, secrets exposure, and security best practices.",
+  },
+  {
+    id: "code_quality",
+    icon: "✨",
+    label: "Code Quality",
+    description: "Maintainability, test coverage, and technical debt",
+    defaultGoal:
+      "Assess the code quality of this repository — test coverage, documentation, technical debt hotspots, and overall maintainability.",
+  },
+  {
+    id: "custom",
+    icon: "✏️",
+    label: "Custom Goal",
+    description: "Ask anything about this repository",
+    defaultGoal: "",
+  },
 ];
 
 const STEP_ICONS: Record<string, string> = {
@@ -59,6 +102,7 @@ const card: React.CSSProperties = {
 
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState("");
+  const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
   const [goal, setGoal] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [events, setEvents] = useState<StreamEvent[]>([]);
@@ -87,7 +131,7 @@ export default function Home() {
       const res = await fetch(`${apiUrl}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo_url: repoUrl, goal }),
+        body: JSON.stringify({ repo_url: repoUrl, goal, feature_id: selectedFeatureId ?? "custom" }),
       });
 
       if (!res.ok) {
@@ -147,7 +191,7 @@ export default function Home() {
     }
   };
 
-  const canSubmit = !isAnalyzing && repoUrl.trim() !== "" && goal.trim() !== "";
+  const canSubmit = !isAnalyzing && repoUrl.trim() !== "" && selectedFeatureId !== null && goal.trim() !== "";
   const hasOutput = events.length > 0 || analysis !== "" || isAnalyzing;
 
   return (
@@ -180,7 +224,8 @@ export default function Home() {
 
         {/* ── Analyzer form ────────────────────────────── */}
         <section style={{ ...card, padding: "28px" }}>
-          <div style={{ marginBottom: "18px" }}>
+          {/* Repo URL */}
+          <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Repository URL</label>
             <input
               type="text"
@@ -195,47 +240,81 @@ export default function Home() {
             />
           </div>
 
+          {/* Feature cards */}
           <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Your question</label>
-            <textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="What would you like to know about this repository?"
-              rows={3}
-              disabled={isAnalyzing}
-              style={{ ...inputStyle(isAnalyzing), resize: "none" }}
-              onFocus={(e) => (e.currentTarget.style.boxShadow = "0 0 0 3px var(--ring)")}
-              onBlur={(e) => (e.currentTarget.style.boxShadow = "none")}
-            />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "10px" }}>
-              {EXAMPLE_GOALS.map((eg) => (
-                <button
-                  key={eg}
-                  onClick={() => setGoal(eg)}
-                  disabled={isAnalyzing}
-                  style={{
-                    fontSize: "11px",
-                    padding: "4px 10px",
-                    borderRadius: "20px",
-                    border: "1px solid var(--chip-border)",
-                    background: "var(--chip-bg)",
-                    color: "var(--accent)",
-                    cursor: isAnalyzing ? "default" : "pointer",
-                    opacity: isAnalyzing ? 0.45 : 1,
-                    transition: "background 0.15s, color 0.15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isAnalyzing) e.currentTarget.style.background = "var(--accent-muted)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "var(--chip-bg)";
-                  }}
-                >
-                  {eg}
-                </button>
-              ))}
+            <label style={labelStyle}>Analysis type</label>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "10px",
+            }}>
+              {FEATURES.map((f) => {
+                const selected = selectedFeatureId === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      setSelectedFeatureId(f.id);
+                      setGoal(f.defaultGoal);
+                    }}
+                    disabled={isAnalyzing}
+                    style={{
+                      textAlign: "left",
+                      padding: "14px 14px 12px",
+                      borderRadius: "10px",
+                      border: selected ? "2px solid var(--accent)" : "1px solid var(--border)",
+                      background: selected ? "var(--accent-muted)" : "var(--bg)",
+                      cursor: isAnalyzing ? "default" : "pointer",
+                      opacity: isAnalyzing ? 0.5 : 1,
+                      transition: "border 0.12s, background 0.12s",
+                      outline: "none",
+                    }}
+                  >
+                    <div style={{ fontSize: "22px", marginBottom: "6px", lineHeight: 1 }}>{f.icon}</div>
+                    <div style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: selected ? "var(--accent)" : "var(--text)",
+                      marginBottom: "3px",
+                      lineHeight: 1.3,
+                    }}>
+                      {f.label}
+                    </div>
+                    <div style={{
+                      fontSize: "11px",
+                      color: "var(--muted)",
+                      lineHeight: 1.4,
+                    }}>
+                      {f.description}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          {/* Goal textarea — shown once a feature is selected */}
+          {selectedFeatureId !== null && (
+            <div style={{ marginBottom: "20px" }}>
+              <label style={labelStyle}>
+                {selectedFeatureId === "custom" ? "Your question" : "Goal (edit to refine)"}
+              </label>
+              <textarea
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                placeholder={
+                  selectedFeatureId === "custom"
+                    ? "What would you like to know about this repository?"
+                    : ""
+                }
+                rows={3}
+                disabled={isAnalyzing}
+                style={{ ...inputStyle(isAnalyzing), resize: "none" }}
+                onFocus={(e) => (e.currentTarget.style.boxShadow = "0 0 0 3px var(--ring)")}
+                onBlur={(e) => (e.currentTarget.style.boxShadow = "none")}
+              />
+            </div>
+          )}
 
           <button
             onClick={analyze}
