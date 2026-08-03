@@ -111,6 +111,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState("");
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState("");
+  const [isCached, setIsCached] = useState(false);
   const analysisRef = useRef("");
 
   const analyze = async () => {
@@ -121,22 +122,33 @@ export default function Home() {
     setAnalysis("");
     setError("");
     setCurrentStep("");
+    setIsCached(false);
     analysisRef.current = "";
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-      const res = await fetch(`${apiUrl}/analyze`, {
+
+      // Step 1: submit job, get job_id immediately
+      const submitRes = await fetch(`${apiUrl}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo_url: repoUrl, goal, feature_id: selectedFeatureId ?? "custom" }),
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
+      if (!submitRes.ok) {
+        const err = await submitRes.json().catch(() => ({ detail: submitRes.statusText }));
         throw new Error(err.detail ?? "Request failed");
       }
 
-      const reader = res.body?.getReader();
+      const { job_id } = await submitRes.json() as { job_id: string };
+
+      // Step 2: stream events from the job
+      const streamRes = await fetch(`${apiUrl}/jobs/${job_id}/stream`);
+      if (!streamRes.ok) {
+        throw new Error(`Failed to connect to job stream (${streamRes.status})`);
+      }
+
+      const reader = streamRes.body?.getReader();
       const decoder = new TextDecoder();
       if (!reader) throw new Error("No response stream");
 
@@ -162,6 +174,10 @@ export default function Home() {
           }
 
           if (event.type === "done") break;
+          if (event.type === "cache_hit") {
+            setIsCached(true);
+            continue;
+          }
           if (event.type === "error") {
             setError(event.message ?? "Unknown error");
             continue;
@@ -374,7 +390,24 @@ export default function Home() {
 
             {/* Agent steps */}
             <section style={{ ...card, padding: "22px 24px" }}>
-              <p style={eyebrowStyle}>Agent Pipeline</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+                <p style={{ ...eyebrowStyle, margin: 0 }}>Agent Pipeline</p>
+                {isCached && (
+                  <span style={{
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "#059669",
+                    background: "#D1FAE5",
+                    border: "1px solid #6EE7B7",
+                    borderRadius: "5px",
+                    padding: "2px 7px",
+                  }}>
+                    Cached
+                  </span>
+                )}
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {events.map((ev, i) => {
                   if (ev.type === "status") {
