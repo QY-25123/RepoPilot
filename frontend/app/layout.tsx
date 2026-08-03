@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GitHub Repo Analyzer",
+  title: "Repopilot",
   description:
     "Three AI agents collaborate to research any GitHub repository and answer your questions — powered by GitHub MCP.",
 };

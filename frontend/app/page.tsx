@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -114,6 +114,83 @@ export default function Home() {
   const [isCached, setIsCached] = useState(false);
   const analysisRef = useRef("");
 
+  const streamJob = async (job_id: string) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+    const streamRes = await fetch(`${apiUrl}/jobs/${job_id}/stream`);
+
+    if (!streamRes.ok) {
+      if (streamRes.status === 404) {
+        window.history.replaceState(null, "", "/");
+        throw new Error("Job expired — the server restarted while you were away. Please resubmit.");
+      }
+      throw new Error(`Failed to connect to job stream (${streamRes.status})`);
+    }
+
+    const reader = streamRes.body?.getReader();
+    const decoder = new TextDecoder();
+    if (!reader) throw new Error("No response stream");
+
+    let buffer = "";
+    outer: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
+
+        let event: StreamEvent;
+        try {
+          event = JSON.parse(raw) as StreamEvent;
+        } catch {
+          continue;
+        }
+
+        if (event.type === "done") break outer;
+        if (event.type === "cache_hit") {
+          setIsCached(true);
+          continue;
+        }
+        if (event.type === "error") {
+          setError(event.message ?? "Unknown error");
+          continue;
+        }
+        if (event.type === "analysis_chunk") {
+          analysisRef.current += event.text ?? "";
+          setAnalysis(analysisRef.current);
+          continue;
+        }
+        if (event.type === "analysis_complete" || event.type === "research_data") {
+          continue;
+        }
+        if (event.type === "status") {
+          setCurrentStep(event.step ?? "");
+        }
+        setEvents((prev) => [...prev, event]);
+      }
+    }
+  };
+
+  // Reconnect to a running job if the page is refreshed mid-analysis
+  useEffect(() => {
+    const jobId = new URLSearchParams(window.location.search).get("job");
+    if (!jobId) return;
+    setIsAnalyzing(true);
+    streamJob(jobId)
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => {
+        setIsAnalyzing(false);
+        setCurrentStep("");
+        window.history.replaceState(null, "", "/");
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const analyze = async () => {
     if (!repoUrl.trim() || !goal.trim()) return;
 
@@ -128,7 +205,6 @@ export default function Home() {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
-      // Step 1: submit job, get job_id immediately
       const submitRes = await fetch(`${apiUrl}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,66 +217,15 @@ export default function Home() {
       }
 
       const { job_id } = await submitRes.json() as { job_id: string };
+      window.history.replaceState(null, "", `?job=${job_id}`);
 
-      // Step 2: stream events from the job
-      const streamRes = await fetch(`${apiUrl}/jobs/${job_id}/stream`);
-      if (!streamRes.ok) {
-        throw new Error(`Failed to connect to job stream (${streamRes.status})`);
-      }
-
-      const reader = streamRes.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) throw new Error("No response stream");
-
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-
-          let event: StreamEvent;
-          try {
-            event = JSON.parse(raw) as StreamEvent;
-          } catch {
-            continue;
-          }
-
-          if (event.type === "done") break;
-          if (event.type === "cache_hit") {
-            setIsCached(true);
-            continue;
-          }
-          if (event.type === "error") {
-            setError(event.message ?? "Unknown error");
-            continue;
-          }
-          if (event.type === "analysis_chunk") {
-            analysisRef.current += event.text ?? "";
-            setAnalysis(analysisRef.current);
-            continue;
-          }
-          if (event.type === "analysis_complete" || event.type === "research_data") {
-            continue;
-          }
-          if (event.type === "status") {
-            setCurrentStep(event.step ?? "");
-          }
-          setEvents((prev) => [...prev, event]);
-        }
-      }
+      await streamJob(job_id);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsAnalyzing(false);
       setCurrentStep("");
+      window.history.replaceState(null, "", "/");
     }
   };
 
@@ -221,7 +246,7 @@ export default function Home() {
             color: "var(--muted)",
             marginBottom: "10px",
           }}>
-            GitHub MCP · AI Analysis
+            Repopilot · AI Analysis
           </p>
           <h1 style={{
             fontFamily: "Georgia, 'Times New Roman', serif",
@@ -231,7 +256,7 @@ export default function Home() {
             color: "var(--text)",
             margin: 0,
           }}>
-            GitHub Repo Analyzer
+            Repopilot
           </h1>
         </div>
 
@@ -537,12 +562,12 @@ export default function Home() {
             color: "var(--text)",
             margin: "8px 0 6px",
           }}>
-            Three agents, one answer
+            How Repopilot works
           </h2>
           <p style={{ fontSize: "14px", color: "var(--muted)", lineHeight: 1.7, margin: "0 0 28px" }}>
             Drop in any public GitHub repository URL and ask your question in plain
-            English. A sequential pipeline of three AI agents handles the rest —
-            no manual code reading required.
+            English. Repopilot runs a sequential pipeline of three AI agents to
+            answer it — no manual code reading required.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
