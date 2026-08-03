@@ -3,6 +3,7 @@ FEATURES: dict[str, dict] = {
         "label": "Learn the Repo",
         "icon": "📖",
         "description": "Architecture, tech stack, and how to get started",
+        "cache_ttl": 21600,  # 6 h — repo structure rarely changes within a session
         "tools": {"get_file_contents", "list_branches", "search_code", "list_commits"},
         "default_goal": (
             "Give me a comprehensive overview of this repository — what it does, "
@@ -30,6 +31,7 @@ FEATURES: dict[str, dict] = {
         "label": "Historical Analysis",
         "icon": "📅",
         "description": "Evolution, milestones, and contributor patterns over time",
+        "cache_ttl": 21600,  # 6 h
         "tools": {"list_commits", "list_tags", "list_branches", "list_pull_requests", "pull_request_read"},
         "default_goal": (
             "Analyze how this repository has evolved — major milestones, release history, "
@@ -57,6 +59,7 @@ FEATURES: dict[str, dict] = {
         "label": "PR & Issue Health",
         "icon": "🔄",
         "description": "Community health, workflow patterns, and open work",
+        "cache_ttl": 1800,  # 30 min — PR/issue state changes frequently
         "tools": {"list_pull_requests", "pull_request_read", "list_issues", "issue_read"},
         "default_goal": (
             "Assess the health of this repository's PR and issue workflow — "
@@ -85,6 +88,7 @@ FEATURES: dict[str, dict] = {
         "label": "Security Audit",
         "icon": "🔒",
         "description": "Risks, vulnerabilities, and security practices",
+        "cache_ttl": 86400,  # 24 h — security posture is slow to change
         "tools": {"get_file_contents", "search_code", "list_commits"},
         "default_goal": (
             "Audit this repository for security risks — dependency vulnerabilities, "
@@ -115,6 +119,7 @@ FEATURES: dict[str, dict] = {
         "label": "Code Quality",
         "icon": "✨",
         "description": "Maintainability, test coverage, and technical debt",
+        "cache_ttl": 21600,  # 6 h
         "tools": {"get_file_contents", "search_code", "list_branches", "list_commits"},
         "default_goal": (
             "Assess the code quality of this repository — test coverage, documentation, "
@@ -147,6 +152,7 @@ FEATURES: dict[str, dict] = {
         "label": "Custom Goal",
         "icon": "✏️",
         "description": "Ask anything about this repository",
+        "cache_ttl": 3600,  # 1 h
         "tools": {
             "get_file_contents", "list_commits", "list_branches", "list_pull_requests",
             "pull_request_read", "search_code", "list_issues", "issue_read",
