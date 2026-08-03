@@ -122,4 +122,13 @@ async def job_status(job_id: str) -> dict:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok"}
+    from cache import _get_redis
+    redis_status = "disabled"
+    r = _get_redis()
+    if r is not None:
+        try:
+            await r.ping()
+            redis_status = "ok"
+        except Exception as exc:
+            redis_status = f"error: {exc}"
+    return {"status": "ok", "redis": redis_status}
