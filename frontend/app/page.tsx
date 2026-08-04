@@ -113,10 +113,11 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState("");
   const [isCached, setIsCached] = useState(false);
   const analysisRef = useRef("");
+  const abortRef = useRef<AbortController | null>(null);
 
-  const streamJob = async (job_id: string) => {
+  const streamJob = async (job_id: string, signal?: AbortSignal) => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-    const streamRes = await fetch(`${apiUrl}/jobs/${job_id}/stream`);
+    const streamRes = await fetch(`${apiUrl}/jobs/${job_id}/stream`, { signal });
 
     if (!streamRes.ok) {
       if (streamRes.status === 404) {
@@ -176,23 +177,48 @@ export default function Home() {
     }
   };
 
+  const stopAnalysis = () => {
+    abortRef.current?.abort();
+  };
+
   // Reconnect to a running job if the page is refreshed mid-analysis
   useEffect(() => {
     const jobId = new URLSearchParams(window.location.search).get("job");
     if (!jobId) return;
+
+    // Restore the form fields the user had before refresh
+    const saved = sessionStorage.getItem("repopilot_form");
+    if (saved) {
+      try {
+        const { repoUrl: r, selectedFeatureId: f, goal: g } = JSON.parse(saved);
+        setRepoUrl(r ?? "");
+        setSelectedFeatureId(f ?? null);
+        setGoal(g ?? "");
+      } catch {}
+    }
+
+    const controller = new AbortController();
+    abortRef.current = controller;
     setIsAnalyzing(true);
-    streamJob(jobId)
-      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+    streamJob(jobId, controller.signal)
+      .catch((err) => {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : String(err));
+      })
       .finally(() => {
         setIsAnalyzing(false);
         setCurrentStep("");
         window.history.replaceState(null, "", "/");
+        sessionStorage.removeItem("repopilot_form");
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const analyze = async () => {
     if (!repoUrl.trim() || !goal.trim()) return;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setIsAnalyzing(true);
     setEvents([]);
@@ -202,6 +228,11 @@ export default function Home() {
     setIsCached(false);
     analysisRef.current = "";
 
+    sessionStorage.setItem(
+      "repopilot_form",
+      JSON.stringify({ repoUrl, selectedFeatureId, goal })
+    );
+
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -209,6 +240,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo_url: repoUrl, goal, feature_id: selectedFeatureId ?? "custom" }),
+        signal: controller.signal,
       });
 
       if (!submitRes.ok) {
@@ -219,13 +251,18 @@ export default function Home() {
       const { job_id } = await submitRes.json() as { job_id: string };
       window.history.replaceState(null, "", `?job=${job_id}`);
 
-      await streamJob(job_id);
+      await streamJob(job_id, controller.signal);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (err instanceof Error && err.name === "AbortError") {
+        // user stopped — keep partial results, no error message
+      } else {
+        setError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
       setIsAnalyzing(false);
       setCurrentStep("");
       window.history.replaceState(null, "", "/");
+      sessionStorage.removeItem("repopilot_form");
     }
   };
 
@@ -355,38 +392,32 @@ export default function Home() {
           )}
 
           <button
-            onClick={analyze}
-            disabled={!canSubmit}
+            onClick={isAnalyzing ? stopAnalysis : analyze}
+            disabled={!isAnalyzing && !canSubmit}
             style={{
               width: "100%",
               padding: "13px",
               borderRadius: "10px",
               border: "none",
-              background: canSubmit ? "var(--accent)" : "var(--border)",
-              color: canSubmit ? "#fff" : "var(--muted)",
+              background: isAnalyzing ? "#DC2626" : canSubmit ? "var(--accent)" : "var(--border)",
+              color: isAnalyzing || canSubmit ? "#fff" : "var(--muted)",
               fontWeight: 600,
               fontSize: "15px",
-              cursor: canSubmit ? "pointer" : "default",
+              cursor: isAnalyzing || canSubmit ? "pointer" : "default",
               transition: "background 0.15s",
             }}
             onMouseEnter={(e) => {
-              if (canSubmit) e.currentTarget.style.background = "var(--accent-hover)";
+              if (isAnalyzing) e.currentTarget.style.background = "#B91C1C";
+              else if (canSubmit) e.currentTarget.style.background = "var(--accent-hover)";
             }}
             onMouseLeave={(e) => {
-              if (canSubmit) e.currentTarget.style.background = "var(--accent)";
+              if (isAnalyzing) e.currentTarget.style.background = "#DC2626";
+              else if (canSubmit) e.currentTarget.style.background = "var(--accent)";
             }}
           >
             {isAnalyzing ? (
               <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                <span style={{
-                  width: "16px", height: "16px",
-                  border: "2px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "#fff",
-                  borderRadius: "50%",
-                  display: "inline-block",
-                  animation: "spin 0.7s linear infinite",
-                }} />
-                Analyzing…
+                ■ Stop analysis
               </span>
             ) : (
               "Analyze Repository"
